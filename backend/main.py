@@ -4,6 +4,7 @@ from urllib.parse import urlparse, parse_qs
 from backend.database import initialize_database, save_post, get_all_posts
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from backend.models import SocialPost, URLListRequest
 from backend.analytics import (
@@ -20,6 +21,15 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+    "http://localhost:5173",
+    "http://localhost:5174",],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 initialize_database()
 
 class URLRequest(BaseModel):
