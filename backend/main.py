@@ -7,7 +7,13 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from backend.models import SocialPost, URLListRequest
-from backend.analytics import calculate_engagement_rate
+from backend.analytics import (
+    calculate_engagement_rate,
+    calculate_description_length,
+    count_links,
+    count_mentions,
+    extract_posting_hour
+)
 from backend.correlations import pearson_correlation
 
 load_dotenv()
@@ -74,8 +80,12 @@ def analyze_youtube(url: str):
     )
 
     return {
-        **post.model_dump(),
-        "engagement_rate": calculate_engagement_rate(post)
+    **post.model_dump(),
+    "engagement_rate": calculate_engagement_rate(post),
+    "description_length": calculate_description_length(post.text),
+    "link_count": count_links(post.text),
+    "mention_count": count_mentions(post.text),
+    "posting_hour": extract_posting_hour(post.published_at)
     }
 
 
@@ -103,21 +113,26 @@ def analyze_batch(request: URLListRequest):
 
     if len(valid_posts) >= 2:
         views = [post["views"] for post in valid_posts]
+        likes = [post["likes"] for post in valid_posts]
+        comments = [post["comments"] for post in valid_posts]
         engagement_rates = [
             post["engagement_rate"]
             for post in valid_posts
         ]
 
-        views_engagement_correlation = pearson_correlation(
-            views,
-            engagement_rates
-        )
+        correlations = {
+            "views_vs_likes": pearson_correlation(views, likes),
+            "views_vs_comments": pearson_correlation(views, comments),
+            "views_vs_engagement_rate": pearson_correlation(
+             views,
+             engagement_rates
+            ),
+            "likes_vs_comments": pearson_correlation(likes, comments)
+        }
     else:
-        views_engagement_correlation = None
+        correlations = None
 
     return {
         "posts": results,
-        "correlations": {
-            "views_vs_engagement_rate": views_engagement_correlation
+        "correlations": correlations
         }
-    }
