@@ -1,11 +1,11 @@
 import os
-from urllib.parse import urlparse, parse_qs
-
 import requests
+from urllib.parse import urlparse, parse_qs
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 from backend.models import SocialPost
+from backend.analytics import calculate_engagement_rate
 
 load_dotenv()
 
@@ -64,7 +64,7 @@ def analyze(request: URLRequest):
 
     video = data["items"][0]
 
-    return SocialPost(
+    post = SocialPost(
     platform="YouTube",
     post_id=video_id,
     author=video["snippet"]["channelTitle"],
@@ -74,4 +74,9 @@ def analyze(request: URLRequest):
     likes=int(video["statistics"].get("likeCount", 0)),
     comments=int(video["statistics"].get("commentCount", 0)),
     shares=0
-)
+    )
+
+    return {
+    **post.model_dump(),
+    "engagement_rate": calculate_engagement_rate(post)
+    }
