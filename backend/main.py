@@ -116,23 +116,82 @@ def analyze_batch(request: URLListRequest):
         likes = [post["likes"] for post in valid_posts]
         comments = [post["comments"] for post in valid_posts]
         engagement_rates = [
-            post["engagement_rate"]
+        post["engagement_rate"]
+        for post in valid_posts
+        ]
+
+        description_lengths = [
+            post["description_length"]
+            for post in valid_posts
+        ]   
+
+        link_counts = [
+            post["link_count"]
+        for post in valid_posts
+        ]
+
+        mention_counts = [
+            post["mention_count"]
+            for post in valid_posts
+        ]
+
+        posting_hours = [
+            post["posting_hour"]
             for post in valid_posts
         ]
 
         correlations = {
-            "views_vs_likes": pearson_correlation(views, likes),
-            "views_vs_comments": pearson_correlation(views, comments),
-            "views_vs_engagement_rate": pearson_correlation(
-             views,
-             engagement_rates
-            ),
-            "likes_vs_comments": pearson_correlation(likes, comments)
+        "sample_size": len(valid_posts),
+
+        "views_vs_likes": pearson_correlation(
+            views, likes
+        ),
+
+        "views_vs_comments": pearson_correlation(
+            views, comments
+        ),
+
+        "views_vs_engagement_rate": pearson_correlation(
+            views, engagement_rates
+        ),
+
+        "likes_vs_comments": pearson_correlation(
+            likes, comments
+        ),
+
+        "description_length_vs_engagement_rate": pearson_correlation(
+            description_lengths, engagement_rates
+        ),
+
+        "link_count_vs_engagement_rate": pearson_correlation(
+            link_counts, engagement_rates
+        ),
+
+        "mention_count_vs_engagement_rate": pearson_correlation(
+            mention_counts, engagement_rates
+        ),
+
+        "posting_hour_vs_engagement_rate": pearson_correlation(
+            posting_hours, engagement_rates
+        )
         }
     else:
         correlations = None
 
     return {
-        "posts": results,
-        "correlations": correlations
-        }
+    "posts": results,
+    "summary": {
+        "sample_size": len(valid_posts),
+        "features_analyzed": [
+            "views",
+            "likes",
+            "comments",
+            "engagement_rate",
+            "description_length",
+            "link_count",
+            "mention_count",
+            "posting_hour"
+        ]
+    },
+    "correlations": correlations
+}
