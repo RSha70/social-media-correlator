@@ -86,4 +86,19 @@ def get_all_posts():
 
     connection.close()
 
-    return rows
+    posts = []
+
+    for row in rows:
+        posts.append({
+            "platform": row[0],
+            "post_id": row[1],
+            "author": row[2],
+            "text": row[3],
+            "published_at": row[4],
+            "views": row[5],
+            "likes": row[6],
+            "comments": row[7],
+            "shares": row[8]
+        })
+
+    return posts
