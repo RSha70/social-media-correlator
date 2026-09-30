@@ -12,3 +12,6 @@ class SocialPost(BaseModel):
     likes: int = 0
     comments: int = 0
     shares: int = 0
+
+class URLListRequest(BaseModel):
+    urls: list[str]
