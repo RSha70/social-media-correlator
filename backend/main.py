@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from backend.models import SocialPost, URLListRequest
 from backend.analytics import calculate_engagement_rate
+from backend.correlations import pearson_correlation
 
 load_dotenv()
 
@@ -95,4 +96,28 @@ def analyze_batch(request: URLListRequest):
     for url in request.urls:
         results.append(analyze_youtube(url))
 
-    return {"posts": results}
+    valid_posts = [
+        post for post in results
+        if "engagement_rate" in post
+    ]
+
+    if len(valid_posts) >= 2:
+        views = [post["views"] for post in valid_posts]
+        engagement_rates = [
+            post["engagement_rate"]
+            for post in valid_posts
+        ]
+
+        views_engagement_correlation = pearson_correlation(
+            views,
+            engagement_rates
+        )
+    else:
+        views_engagement_correlation = None
+
+    return {
+        "posts": results,
+        "correlations": {
+            "views_vs_engagement_rate": views_engagement_correlation
+        }
+    }
