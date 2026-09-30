@@ -1,11 +1,10 @@
 import os
 import requests
 from urllib.parse import urlparse, parse_qs
-
+from backend.database import initialize_database, save_post, get_all_posts
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
-
 from backend.models import SocialPost, URLListRequest
 from backend.analytics import (
     calculate_engagement_rate,
@@ -21,7 +20,7 @@ load_dotenv()
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 app = FastAPI()
-
+initialize_database()
 
 class URLRequest(BaseModel):
     url: str
@@ -78,6 +77,7 @@ def analyze_youtube(url: str):
         comments=int(video["statistics"].get("commentCount", 0)),
         shares=0
     )
+    save_post(post)
 
     return {
     **post.model_dump(),
@@ -194,4 +194,12 @@ def analyze_batch(request: URLListRequest):
         ]
     },
     "correlations": correlations
-}
+    }
+
+@app.get("/posts")
+def get_posts():
+    posts = get_all_posts()
+
+    return {
+        "posts": posts
+    }
