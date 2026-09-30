@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime
 from urllib.parse import urlparse, parse_qs
 from backend.database import initialize_database, save_post, get_all_posts
 from dotenv import load_dotenv
@@ -210,6 +211,24 @@ def analyze_batch(request: URLListRequest):
 def get_posts():
     posts = get_all_posts()
 
+    results = []
+
+    for post in posts:
+        results.append({
+            **post,
+            "engagement_rate": calculate_engagement_rate(
+                SocialPost(**post)
+            ),
+            "description_length": calculate_description_length(
+                post["text"]
+            ),
+            "link_count": count_links(post["text"]),
+            "mention_count": count_mentions(post["text"]),
+            "posting_hour": extract_posting_hour(
+            datetime.fromisoformat(post["published_at"].replace("Z", "+00:00"))
+            )
+        })
+
     return {
-        "posts": posts
+        "posts": results
     }
