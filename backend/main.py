@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
+from backend.models import SocialPost
 
 load_dotenv()
 
@@ -63,14 +64,14 @@ def analyze(request: URLRequest):
 
     video = data["items"][0]
 
-    return {
-        "url": request.url,
-        "platform": "YouTube",
-        "video_id": video_id,
-        "title": video["snippet"]["title"],
-        "channel": video["snippet"]["channelTitle"],
-        "published_at": video["snippet"]["publishedAt"],
-        "views": video["statistics"].get("viewCount", 0),
-        "likes": video["statistics"].get("likeCount", 0),
-        "comments": video["statistics"].get("commentCount", 0)
-    }
+    return SocialPost(
+    platform="YouTube",
+    post_id=video_id,
+    author=video["snippet"]["channelTitle"],
+    text=video["snippet"]["description"],
+    published_at=video["snippet"]["publishedAt"],
+    views=int(video["statistics"].get("viewCount", 0)),
+    likes=int(video["statistics"].get("likeCount", 0)),
+    comments=int(video["statistics"].get("commentCount", 0)),
+    shares=0
+)
