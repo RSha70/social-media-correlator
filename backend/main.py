@@ -1,11 +1,32 @@
+import os
+from urllib.parse import urlparse, parse_qs
+
+import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
+
+load_dotenv()
+
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 app = FastAPI()
 
 
 class URLRequest(BaseModel):
     url: str
+
+
+def extract_youtube_video_id(url: str):
+    parsed_url = urlparse(url)
+
+    if parsed_url.hostname in ["www.youtube.com", "youtube.com"]:
+        return parse_qs(parsed_url.query).get("v", [None])[0]
+
+    if parsed_url.hostname == "youtu.be":
+        return parsed_url.path.lstrip("/")
+
+    return None
 
 
 @app.get("/")
@@ -15,21 +36,41 @@ def home():
 
 @app.post("/analyze")
 def analyze(request: URLRequest):
-    url = request.url.lower()
+    video_id = extract_youtube_video_id(request.url)
 
-    if "youtube.com" in url or "youtu.be" in url:
-        platform = "YouTube"
-    elif "tiktok.com" in url:
-        platform = "TikTok"
-    elif "instagram.com" in url:
-        platform = "Instagram"
-    elif "x.com" in url or "twitter.com" in url:
-        platform = "X"
-    else:
-        platform = "Unknown"
+    if not video_id:
+        return {
+            "url": request.url,
+            "error": "Could not extract a YouTube video ID"
+        }
+
+    response = requests.get(
+        "https://www.googleapis.com/youtube/v3/videos",
+        params={
+            "part": "snippet,statistics",
+            "id": video_id,
+            "key": YOUTUBE_API_KEY
+        }
+    )
+
+    data = response.json()
+
+    if not data.get("items"):
+        return {
+            "url": request.url,
+            "error": "YouTube video not found"
+        }
+
+    video = data["items"][0]
 
     return {
         "url": request.url,
-        "platform": platform,
-        "status": "received"
+        "platform": "YouTube",
+        "video_id": video_id,
+        "title": video["snippet"]["title"],
+        "channel": video["snippet"]["channelTitle"],
+        "published_at": video["snippet"]["publishedAt"],
+        "views": video["statistics"].get("viewCount", 0),
+        "likes": video["statistics"].get("likeCount", 0),
+        "comments": video["statistics"].get("commentCount", 0)
     }
