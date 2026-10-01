@@ -14,7 +14,9 @@ function App() {
   const [posts, setPosts] = useState([]);
   const [correlations, setCorrelations] = useState(null);
   const [loading, setLoading] = useState(true);
-
+   const [url, setUrl] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [error, setError] = useState("");
   useEffect(() => {
   Promise.all([
     fetch("http://127.0.0.1:8000/posts").then((response) =>
@@ -58,12 +60,79 @@ function App() {
   engagement: post.engagement_rate * 100,
   author: post.author,
 }));
+  const analyzeVideo = async (event) => {
+  event.preventDefault();
+
+  if (!url.trim()) {
+    setError("Please enter a YouTube URL.");
+    return;
+  }
+
+  setAnalyzing(true);
+  setError("");
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+      throw new Error(data.error || "Failed to analyze video.");
+    }
+
+    setUrl("");
+
+    const postsResponse = await fetch(
+      "http://127.0.0.1:8000/posts"
+    );
+    const postsData = await postsResponse.json();
+
+    const correlationsResponse = await fetch(
+      "http://127.0.0.1:8000/correlations"
+    );
+    const correlationsData = await correlationsResponse.json();
+
+    setPosts(postsData.posts);
+    setCorrelations(correlationsData.correlations);
+  } catch (error) {
+    console.error("Error analyzing video:", error);
+    setError(error.message);
+  } finally {
+    setAnalyzing(false);
+  }
+};
   return (
     <div className="app">
       <header>
         <h1>Social Media Correlator</h1>
         <p>Analyze what drives social media engagement.</p>
       </header>
+
+      <section className="analyze-section">
+  <h2>Analyze a YouTube Video</h2>
+
+  <form onSubmit={analyzeVideo} className="analyze-form">
+    <input
+      type="url"
+      placeholder="Paste a YouTube URL..."
+      value={url}
+      onChange={(event) => setUrl(event.target.value)}
+      disabled={analyzing}
+    />
+
+    <button type="submit" disabled={analyzing}>
+      {analyzing ? "Analyzing..." : "Analyze Video"}
+    </button>
+  </form>
+
+  {error && <p className="error-message">{error}</p>}
+</section>
 
       <section className="stats">
         <div className="stat-card">
