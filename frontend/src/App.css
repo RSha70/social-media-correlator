@@ -202,3 +202,56 @@ header p {
   margin-top: -8px;
   margin-bottom: 16px;
 }
+
+.analyze-section {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.analyze-section h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+.analyze-form {
+  display: flex;
+  gap: 12px;
+}
+
+.analyze-form input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid #d5d5d5;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.analyze-form button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background: #171717;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.analyze-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #c62828;
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .analyze-form {
+    flex-direction: column;
+  }
+}
