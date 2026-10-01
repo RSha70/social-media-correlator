@@ -12,20 +12,28 @@ import {
 
 function App() {
   const [posts, setPosts] = useState([]);
+  const [correlations, setCorrelations] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/posts")
-      .then((response) => response.json())
-      .then((data) => {
-        setPosts(data.posts);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching posts:", error);
-        setLoading(false);
-      });
-  }, []);
+  Promise.all([
+    fetch("http://127.0.0.1:8000/posts").then((response) =>
+      response.json()
+    ),
+    fetch("http://127.0.0.1:8000/correlations").then((response) =>
+      response.json()
+    ),
+  ])
+    .then(([postsData, correlationData]) => {
+      setPosts(postsData.posts);
+      setCorrelations(correlationData.correlations);
+      setLoading(false);
+    })
+    .catch((error) => {
+      console.error("Error fetching dashboard data:", error);
+      setLoading(false);
+    });
+}, []);
 
   if (loading) {
     return <div className="app">Loading...</div>;
@@ -110,6 +118,69 @@ function App() {
       </ScatterChart>
     </ResponsiveContainer>
   </div>
+</section>
+
+
+<section className="correlations-section">
+  <h2>Correlation Analysis</h2>
+          <p className="correlation-description">
+  Correlations show the strength and direction of linear relationships
+  within the analyzed posts. They do not imply causation.
+</p>
+  {correlations ? (
+    <div className="correlation-grid">
+      <div className="correlation-card">
+        <span>Views ↔ Likes</span>
+        <strong>
+          {correlations.views_vs_likes.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Views ↔ Comments</span>
+        <strong>
+          {correlations.views_vs_comments.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Views ↔ Engagement</span>
+        <strong>
+          {correlations.views_vs_engagement_rate.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Description ↔ Engagement</span>
+        <strong>
+          {correlations.description_length_vs_engagement_rate.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Links ↔ Engagement</span>
+        <strong>
+          {correlations.link_count_vs_engagement_rate.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Mentions ↔ Engagement</span>
+        <strong>
+          {correlations.mention_count_vs_engagement_rate.toFixed(2)}
+        </strong>
+      </div>
+
+      <div className="correlation-card">
+        <span>Posting Hour ↔ Engagement</span>
+        <strong>
+          {correlations.posting_hour_vs_engagement_rate.toFixed(2)}
+        </strong>
+      </div>
+    </div>
+  ) : (
+    <p>Not enough posts to calculate correlations.</p>
+  )}
 </section>
 
       <section className="posts-section">

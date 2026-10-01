@@ -232,3 +232,70 @@ def get_posts():
     return {
         "posts": results
     }
+
+@app.get("/correlations")
+def get_correlations():
+        posts = get_all_posts()
+
+        if len(posts) < 2:
+            return {
+            "sample_size": len(posts),
+                "correlations": None
+        }
+
+        engagement_rates = [
+        calculate_engagement_rate(SocialPost(**post))
+        for post in posts
+        ]
+
+        views = [post["views"] for post in posts]
+        likes = [post["likes"] for post in posts]
+        comments = [post["comments"] for post in posts]
+
+        description_lengths = [
+        calculate_description_length(post["text"])
+        for post in posts
+        ]
+
+        link_counts = [
+        count_links(post["text"])
+        for post in posts
+        ]
+
+        mention_counts = [
+        count_mentions(post["text"])
+        for post in posts
+        ]
+
+        posting_hours = [
+        extract_posting_hour(
+            datetime.fromisoformat(
+                post["published_at"].replace("Z", "+00:00")
+            )
+        )
+        for post in posts
+        ]
+
+        return {
+        "sample_size": len(posts),
+        "correlations": {
+            "views_vs_likes": pearson_correlation(views, likes),
+            "views_vs_comments": pearson_correlation(views, comments),
+            "views_vs_engagement_rate": pearson_correlation(
+                views, engagement_rates
+            ),
+            "likes_vs_comments": pearson_correlation(likes, comments),
+            "description_length_vs_engagement_rate": pearson_correlation(
+                description_lengths, engagement_rates
+            ),
+            "link_count_vs_engagement_rate": pearson_correlation(
+                link_counts, engagement_rates
+            ),
+            "mention_count_vs_engagement_rate": pearson_correlation(
+                mention_counts, engagement_rates
+            ),
+            "posting_hour_vs_engagement_rate": pearson_correlation(
+                posting_hours, engagement_rates
+            )
+        }
+    }
