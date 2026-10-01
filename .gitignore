@@ -25,3 +25,9 @@ Thumbs.db
 
 # Local database
 social_media.db
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.db
