@@ -17,6 +17,9 @@ function App() {
    const [url, setUrl] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
+  const [batchUrls, setBatchUrls] = useState([""]);
+const [batchAnalyzing, setBatchAnalyzing] = useState(false);
+const [batchError, setBatchError] = useState("");
   useEffect(() => {
   Promise.all([
     fetch("http://127.0.0.1:8000/posts").then((response) =>
@@ -107,6 +110,77 @@ function App() {
     setAnalyzing(false);
   }
 };
+  const analyzeBatch = async (event) => {
+  event.preventDefault();
+
+  const urls = batchUrls
+    .map((item) => item.trim())
+    .filter((item) => item !== "");
+
+  if (urls.length === 0) {
+    setBatchError("Add at least one YouTube URL.");
+    return;
+  }
+
+  setBatchAnalyzing(true);
+  setBatchError("");
+
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:8000/analyze/batch",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ urls }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error("Failed to analyze videos.");
+    }
+
+    if (data.posts?.some((post) => post.error)) {
+      const failedPosts = data.posts.filter((post) => post.error);
+
+      if (failedPosts.length > 0) {
+        setBatchError(
+          `${failedPosts.length} video(s) could not be analyzed.`
+        );
+      }
+    }
+
+    const postsResponse = await fetch(
+      "http://127.0.0.1:8000/posts"
+    );
+    const postsData = await postsResponse.json();
+
+    const correlationsResponse = await fetch(
+      "http://127.0.0.1:8000/correlations"
+    );
+    const correlationsData = await correlationsResponse.json();
+
+    setPosts(postsData.posts);
+    setCorrelations(correlationsData.correlations);
+    setBatchUrls([""]);
+  } catch (error) {
+    console.error("Error analyzing batch:", error);
+    setBatchError(error.message);
+  } finally {
+    setBatchAnalyzing(false);
+  }
+};
+const addBatchUrl = () => {
+  setBatchUrls([...batchUrls, ""]);
+};
+const updateBatchUrl = (index, value) => {
+  const updatedUrls = [...batchUrls];
+  updatedUrls[index] = value;
+  setBatchUrls(updatedUrls);
+};
   return (
     <div className="app">
       <header>
@@ -134,6 +208,45 @@ function App() {
   {error && <p className="error-message">{error}</p>}
 </section>
 
+<section className="batch-section">
+  <h2>Analyze Multiple Videos</h2>
+
+  <form onSubmit={analyzeBatch}>
+    {batchUrls.map((batchUrl, index) => (
+      <input
+        key={index}
+        type="url"
+        placeholder="Paste a YouTube URL..."
+        value={batchUrl}
+        onChange={(event) =>
+          updateBatchUrl(index, event.target.value)
+        }
+        disabled={batchAnalyzing}
+      />
+    ))}
+
+    <div className="batch-actions">
+      <button
+        type="button"
+        onClick={addBatchUrl}
+        disabled={batchAnalyzing}
+      >
+        + Add another URL
+      </button>
+
+      <button type="submit" disabled={batchAnalyzing}>
+        {batchAnalyzing
+          ? "Analyzing..."
+          : "Analyze Videos"}
+      </button>
+    </div>
+  </form>
+
+  {batchError && (
+    <p className="error-message">{batchError}</p>
+  )}
+</section>
+
       <section className="stats">
         <div className="stat-card">
           <span>Posts Analyzed</span>
@@ -155,6 +268,8 @@ function App() {
   <strong>{(averageEngagement * 100).toFixed(2)}%</strong>
 </div>
       </section>
+
+
 
       <section className="chart-section">
   <h2>Views vs. Engagement Rate</h2>
